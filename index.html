@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>树约</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-bg: #0a0a0a;
+      --secondary-bg: #121212;
+      --accent-green: #00ff8c;
+      --light-green: #b8ffd9;
+      --dark-green: #005a34;
+      --text-light: #f0f0f0;
+      --text-gray: #aaaaaa;
+      --border-radius: 12px;
+      --card-shadow: 0 4px 20px rgba(0, 255, 140, 0.1);
+      --success: #28a745;
+      --danger: #dc3545;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--primary-bg);
+      color: var(--text-light);
+      line-height: 1.6;
+      overflow-x: hidden;
+      background-image:
+        radial-gradient(circle at 10% 20%, rgba(0, 255, 140, 0.05) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(0, 255, 140, 0.05) 0%, transparent 20%);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      margin-bottom: 30px;
+      border-bottom: 1px solid rgba(0, 255, 140, 0.2);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo h1 {
+      font-size: 2rem;
+      background: linear-gradient(90deg, var(--accent-green), var(--light-green));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-weight: 700;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--dark-green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--accent-green);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .btc-price {
+      background: var(--secondary-bg);
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-weight: 600;
+      border: 1px solid var(--dark-green);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btc-price .price-value {
+      color: var(--accent-green);
+    }
+
+    .help-btn {
+      background: var(--secondary-bg);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      color: var(--accent-green);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .help-btn:hover {
+      background: var(--dark-green);
+      transform: scale(1.1);
+    }
+
+    .connect-btn {
+      background: var(--success);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 255, 140, 0.2);
+    }
+
+    .connect-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 255, 140, 0.3);
+    }
+
+    .disconnect-btn {
+      background: var(--danger);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 255, 140, 0.2);
+    }
+
+    .disconnect-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 255, 140, 0.3);
+    }
+
+    .wallet-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--secondary-bg);
+      padding: 8px 15px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      border: 1px solid var(--dark-green);
+    }
+
+    .wallet-address {
+      color: var(--accent-green);
+      font-weight: 500;
+    }
+
+    .wallet-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(0, 255, 140, 0.1);
+      border: 1px solid rgba(0, 255, 140, 0.3);
+      font-size: 0.85rem;
+    }
+
+    .main-panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+
+    .panel {
+      background: var(--secondary-bg);
+      border-radius: var(--border-radius);
+      padding: 25px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 255, 140, 0.1);
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(0, 255, 140, 0.1);
+    }
+
+    .panel-title h2 {
+      font-size: 1.4rem;
+      color: var(--accent-green);
+    }
+
+    .bet-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group.full-width {
+      grid-column: span 2;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-gray);
+      font-size: 0.9rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 15px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--dark-green);
+      border-radius: 8px;
+      color: var(--text-light);
+      font-size: 1rem;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent-green);
+    }
+
+    .radio-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .radio-option {
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .radio-option input[type="radio"] {
+      display: none;
+    }
+
+    .radio-option label {
+      display: block;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--dark-green);
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .radio-option input[type="radio"]:checked+label {
+      background: var(--dark-green);
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+    }
+
+    .bet-btn {
+      grid-column: span 2;
+      background: linear-gradient(90deg, var(--dark-green), #007a4d);
+      color: white;
+      border: none;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(0, 255, 140, 0.2);
+    }
+
+    .bet-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 255, 140, 0.3);
+    }
+
+    .bets-history {
+      grid-column: span 2;
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .history-table th {
+      text-align: left;
+      padding: 12px 15px;
+      background: rgba(0, 40, 20, 0.5);
+      color: var(--accent-green);
+      font-weight: 600;
+    }
+
+    .history-table td {
+      padding: 12px 15px;
+      border-bottom: 1px solid rgba(0, 255, 140, 0.1);
+    }
+
+    .history-table tr:hover {
+      background: rgba(0, 255, 140, 0.05);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .status-pending {
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+    }
+
+    .status-won {
+      background: rgba(0, 255, 140, 0.2);
+      color: var(--accent-green);
+    }
+
+    .status-lost {
+      background: rgba(255, 87, 87, 0.2);
+      color: #ff5757;
+    }
+
+    .settle-btn {
+      background: var(--dark-green);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .settle-btn:hover {
+      background: var(--accent-green);
+      color: #000;
+    }
+
+    .settle-panel {
+      grid-column: span 2;
+    }
+
+    .settle-controls {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .settle-all-btn {
+      background: linear-gradient(90deg, #007a4d, var(--dark-green));
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 255, 140, 0.2);
+    }
+
+    .settle-all-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 255, 140, 0.3);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: var(--secondary-bg);
+      border-radius: var(--border-radius);
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 30px;
+      position: relative;
+      border: 1px solid var(--dark-green);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: none;
+      border: none;
+      color: var(--accent-green);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .modal-title {
+      color: var(--accent-green);
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+    }
+
+    .rules-section {
+      margin-bottom: 30px;
+    }
+
+    .rules-section h3 {
+      color: var(--accent-green);
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+    }
+
+    .rules-section p {
+      margin-bottom: 15px;
+      line-height: 1.7;
+    }
+
+    .odds-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .odds-table th,
+    .odds-table td {
+      padding: 12px 15px;
+      text-align: center;
+      border: 1px solid rgba(0, 255, 140, 0.1);
+    }
+
+    .odds-table th {
+      background: rgba(0, 40, 20, 0.5);
+      color: var(--accent-green);
+    }
+
+    .odds-table tr:nth-child(even) {
+      background: rgba(0, 20, 10, 0.3);
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 8px;
+      color: white;
+      font-size: 0.9rem;
+      z-index: 1001;
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: all 0.3s ease;
+    }
+
+    .notification.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .notification.success {
+      background: var(--dark-green);
+      border: 1px solid var(--accent-green);
+    }
+
+    .notification.error {
+      background: rgba(255, 87, 87, 0.2);
+      border: 1px solid #ff5757;
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      display: none;
+    }
+
+    .loading-spinner {
+      border: 4px solid var(--text-gray);
+      border-top: 4px solid var(--accent-green);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    button:focus,
+    .form-control:focus {
+      outline: 2px solid var(--accent-green);
+      outline-offset: 2px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .main-panels {
+        grid-template-columns: 1fr;
+      }
+
+      .bet-form {
+        grid-template-columns: 1fr;
+      }
+
+      .bet-btn,
+      .form-group.full-width {
+        grid-column: 1;
+      }
+    }
+
+    @media (max-width: 600px) {
+      header {
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .header-controls {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .wallet-info {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">🌳</div>
+        <h1>树约</h1>
+      </div>
+      <div class="header-controls">
+        <div class="btc-price">
+          <span>BTC价格:</span>
+          <span class="price-value" id="btcPrice">$--</span>
+        </div>
+        <button class="help-btn" id="helpBtn" aria-label="查看规则">?</button>
+        <button class="connect-btn" id="connectBtn" aria-label="连接钱包"><i class="fas fa-plug"></i> 连接钱包</button>
+        <button class="disconnect-btn hidden" id="disconnectBtn" aria-label="断开钱包"><i class="fas fa-power-off"></i>
+          断开连接</button>
+        <div class="wallet-info hidden" id="walletInfo">
+          <div>
+            已连接：<span class="wallet-address" id="walletAddress"></span>
+            <div class="wallet-badge" id="walletBadge">
+              <i class="fab fa-ethereum"></i> <span id="walletName">未知钱包</span>
+            </div>
+          </div>
+          <div>网络：<span id="networkInfo">未知</span></div>
+          <div>余额：<span id="balanceInfo">0 BNB</span></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-panels">
+      <div class="panel bet-panel">
+        <div class="panel-title">
+          <h2>创建事件合约</h2>
+        </div>
+        <form class="bet-form" id="betForm">
+          <div class="form-group">
+            <label>开仓</label>
+            <div class="radio-group">
+              <div class="radio-option">
+                <input type="radio" name="direction" id="directionUp" value="up" checked>
+                <label for="directionUp">多 </label>
+              </div>
+              <div class="radio-option">
+                <input type="radio" name="direction" id="directionDown" value="down">
+                <label for="directionDown">空 </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>代币类型</label>
+            <div class="radio-group">
+              <div class="radio-option">
+                <input type="radio" name="token" id="tokenUSDT" value="usdt" checked>
+                <label for="tokenUSDT">USDT</label>
+              </div>
+              <div class="radio-option">
+                <input type="radio" name="token" id="tokenBNB" value="bnb">
+                <label for="tokenBNB">BNB</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>风险模式</label>
+            <div class="radio-group">
+              <div class="radio-option">
+                <input type="radio" name="mode" id="modeNormal" value="normal" checked>
+                <label for="modeNormal">正常模式</label>
+              </div>
+              <div class="radio-option">
+                <input type="radio" name="mode" id="modeLowRisk" value="lowRisk">
+                <label for="modeLowRisk">低风险模式</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>仓位时长选择</label>
+            <select class="form-control" id="durationSelect">
+              <option value="1800">30分钟</option>
+              <option value="3600">1小时</option>
+              <option value="14400">4小时</option>
+              <option value="86400">1天</option>
+              <option value="604800">1周</option>
+              <option value="2592000">1个月</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="amountInput">投注金额</label>
+            <input type="number" class="form-control" id="amountInput" placeholder="输入金额">
+            <div class="min-amount" id="minAmount">最低仓位: 20 USDT (正常模式) / 40 USDT (低风险)</div>
+          </div>
+
+          <button type="submit" class="bet-btn" aria-label="提交投注">立即开仓</button>
+        </form>
+      </div>
+
+      <div class="panel bets-history">
+        <div class="panel-title">
+          <h2>我的仓位记录</h2>
+        </div>
+        <div class="table-container">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>方向</th>
+                <th>金额</th>
+                <th>时长</th>
+                <th>模式</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="betsTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 30px;">
+                  未连接钱包或没有仓位记录
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel settle-panel">
+        <div class="panel-title">
+          <h2>结算管理</h2>
+        </div>
+        <p>由于服务器问题，可能出现已到期但未结算的仓位，您可以手动进行结算。</p>
+        <div class="settle-controls">
+          <button class="settle-all-btn" id="settleAllBtn" aria-label="结算所有到期投注">结算所有到期仓位</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="rulesModal">
+      <div class="modal-content">
+        <button class="close-modal" id="closeModal" aria-label="关闭规则弹窗">×</button>
+        <h2 class="modal-title">树约</h2>
+        <div class="rules-section">
+          <h3>概述</h3>
+          <p>"树约"是一个基于区块链的BTC价格事件合约。用户预测未来特定时间段内BTC价格是上涨还是下跌，并根据预测结果获得相应奖励。</p>
+        </div>
+        <div class="rules-section">
+          <h3>投注规则</h3>
+          <ul>
+            <li>选择开仓方向：看涨（BTC价格上涨）或看跌（BTC价格下跌）</li>
+            <li>选择代币类型：USDT 或 BNB</li>
+            <li>选择投注模式：正常模式（高收益高风险）或低风险模式（稳定收益）</li>
+            <li>选择预测时长：30分钟、1小时、4小时、1天、1周或1个月</li>
+            <li>输入投注金额：需满足最低投注要求</li>
+            <li>BTC价格以区块链链上价格为准，结算时间同样以区块链价格为准</li>
+          </ul>
+        </div>
+        <div class="rules-section">
+          <h3>最低投注要求</h3>
+          <ul>
+            <li><strong>USDT</strong>: 正常模式最低20 USDT，低风险模式最低40 USDT</li>
+            <li><strong>BNB</strong>: 最低0.05 BNB（所有模式）</li>
+          </ul>
+        </div>
+        <div class="rules-section">
+          <h3>正常模式奖励规则</h3>
+          <p>正常模式的奖励取决于结算时的价格波动幅度：</p>
+          <table class="odds-table">
+            <thead>
+              <tr>
+                <th>波动幅度</th>
+                <th>预测正确奖励</th>
+                <th>预测错误奖励</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  < 0.1%</td>
+                <td>0.9倍</td>
+                <td>0.9倍</td>
+              </tr>
+              <tr>
+                <td>≥ 1%</td>
+                <td>1.16倍</td>
+                <td>0.8倍</td>
+              </tr>
+              <tr>
+                <td>≥ 3%</td>
+                <td>1.24倍</td>
+                <td>0.7倍</td>
+              </tr>
+              <tr>
+                <td>≥ 5%</td>
+                <td>1.32倍</td>
+                <td>0.6倍</td>
+              </tr>
+              <tr>
+                <td>≥ 7%</td>
+                <td>1.40倍</td>
+                <td>0.5倍</td>
+              </tr>
+              <tr>
+                <td>≥ 9%</td>
+                <td>1.48倍</td>
+                <td>0.4倍</td>
+              </tr>
+              <tr>
+                <td>≥ 11%</td>
+                <td>1.56倍</td>
+                <td>0.3倍</td>
+              </tr>
+              <tr>
+                <td>≥ 13%</td>
+                <td>1.64倍</td>
+                <td>0.2倍</td>
+              </tr>
+              <tr>
+                <td>≥ 15%</td>
+                <td>1.72倍</td>
+                <td>0.1倍</td>
+              </tr>
+              <tr>
+                <td>≥ 17%</td>
+                <td>1.80倍</td>
+                <td>0.0倍</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="rules-section">
+          <h3>低风险模式奖励规则</h3>
+          <ul>
+            <li>预测正确：获得1.09倍奖励</li>
+            <li>预测错误：获得0.9倍返还</li>
+          </ul>
+        </div>
+        <div class="rules-section">
+          <h3>结算规则</h3>
+          <ul>
+            <li>投注到期后，有10小时的结算窗口期</li>
+            <li>任何人都可以触发结算（包括玩家自己）</li>
+            <li>超过结算窗口期未结算的投注将无法结算</li>
+            <li>结算需要支付少量Gas费用</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+      // 合约地址和ABI
+      const contractAddress = "0x72119eef096E6cED105Da76bE44E460de12c686F";
+      const usdtAddress = "0x55d398326f99059fF775485246999027B3197955"; // Binance-Peg USDT地址，需替换为实际地址
+
+      const contractABI = [
+        "event BetPlaced(address indexed user, uint256 betIndex, bool betOnUp, bool isUsdt, bool isLowRisk, uint256 amount, uint256 duration, uint256 startPrice, uint256 startTime)",
+        "event BetSettled(address indexed user, uint256 betIndex, bool won, uint256 reward, uint256 fluctuation, uint256 endPrice)",
+        "function placeBet(bool _betOnUp, bool _isUsdt, bool _isLowRisk, uint256 _amount, uint256 _duration) external payable",
+        "function autoSettleBatch(address[] calldata _users, uint256[] calldata _betIndices) external",
+        "function getUserBets(address _user) external view returns (tuple(uint256 amount, bool betOnUp, bool isUsdt, bool isLowRisk, uint256 duration, uint256 startTime, uint256 startPrice, uint256 endPrice, bool settled)[] memory)",
+        "function getPrice() public view returns (uint256)",
+        "function MIN_BET_USDT() public view returns (uint256)",
+        "function MIN_BET_USDT_LOW_RISK() public view returns (uint256)",
+        "function MIN_BET_BNB() public view returns (uint256)"
+      ];
+
+      // 全局变量
+      let provider;
+      let signer;
+      let contract;
+      let userAddress;
+      let currentWallet = null;
+
+      // DOM元素
+      const connectBtn = document.getElementById('connectBtn');
+      const disconnectBtn = document.getElementById('disconnectBtn');
+      const walletInfo = document.getElementById('walletInfo');
+      const walletAddress = document.getElementById('walletAddress');
+      const walletName = document.getElementById('walletName');
+      const networkInfo = document.getElementById('networkInfo');
+      const balanceInfo = document.getElementById('balanceInfo');
+      const btcPrice = document.getElementById('btcPrice');
+      const helpBtn = document.getElementById('helpBtn');
+      const rulesModal = document.getElementById('rulesModal');
+      const closeModal = document.getElementById('closeModal');
+      const betForm = document.getElementById('betForm');
+      const amountInput = document.getElementById('amountInput');
+      const minAmount = document.getElementById('minAmount');
+      const tokenRadios = document.querySelectorAll('input[name="token"]');
+      const modeRadios = document.querySelectorAll('input[name="mode"]');
+      const betsTableBody = document.getElementById('betsTableBody');
+      const settleAllBtn = document.getElementById('settleAllBtn');
+      const loadingOverlay = document.getElementById('loadingOverlay');
+
+      // 检查Ethers.js是否加载
+      function checkEthers() {
+        if (typeof ethers === 'undefined') {
+          showNotification('Ethers.js未加载，请检查网络或刷新页面', 'error');
+          return false;
+        }
+        return true;
+      }
+
+      // 显示通知
+      function showNotification(message, type = 'error') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type} show`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => notification.remove(), 300);
+        }, 5000);
+      }
+
+      // 显示/隐藏加载动画
+      function showLoading() {
+        loadingOverlay.style.display = 'flex';
+      }
+
+      function hideLoading() {
+        loadingOverlay.style.display = 'none';
+      }
+
+      // 更新BTC价格
+      async function updateBTCPrice() {
+        try {
+          if (!checkEthers() || !contract) {
+            btcPrice.textContent = '$--';
+            return;
+          }
+          const price = await contract.getPrice();
+          const priceInUSD = ethers.utils.formatUnits(price, 18); // 假设价格以18位小数返回
+          btcPrice.textContent = `$${parseFloat(priceInUSD).toFixed(2)}`;
+        } catch (error) {
+          console.error("更新BTC价格失败:", error);
+          btcPrice.textContent = '$--';
+          showNotification('获取BTC价格失败，请检查网络或合约', 'error');
+        }
+      }
+
+      // 初始化
+      async function init() {
+        if (!checkEthers()) return;
+
+        // 初始化价格并开始实时刷新
+        await updateBTCPrice();
+        setInterval(updateBTCPrice, 1000); // 每秒刷新
+
+        // 设置最低投注金额显示
+        updateMinAmountDisplay();
+
+        // 事件监听器
+        connectBtn.addEventListener('click', connectWallet);
+        disconnectBtn.addEventListener('click', disconnectWallet);
+        helpBtn.addEventListener('click', () => rulesModal.classList.add('active'));
+        closeModal.addEventListener('click', () => rulesModal.classList.remove('active'));
+        betForm.addEventListener('submit', placeBetHandler);
+        tokenRadios.forEach(radio => {
+          radio.addEventListener('change', updateMinAmountDisplay);
+        });
+        modeRadios.forEach(radio => {
+          radio.addEventListener('change', updateMinAmountDisplay);
+        });
+        settleAllBtn.addEventListener('click', settleAllBets);
+
+        // 尝试自动连接钱包
+        await autoConnectWallet();
+
+        // 监听账户和网络切换
+        const wallets = [
+          window.okxwallet,
+          window.ethereum,
+          window.BinanceChain,
+          window.trustwallet
+        ].filter(Boolean);
+        wallets.forEach(wallet => {
+          wallet.on('accountsChanged', async (accounts) => {
+            if (accounts.length === 0) {
+              disconnectWallet();
+            } else {
+              await connectWithProvider(wallet, walletName.textContent || '未知钱包');
+              loadUserBets();
+            }
+          });
+          wallet.on('chainChanged', () => {
+            showNotification('网络已切换，请重新连接钱包', 'error');
+            disconnectWallet();
+          });
+        });
+      }
+
+      // 自动连接钱包
+      async function autoConnectWallet() {
+        if (!checkEthers()) return;
+        const wallets = [
+          { name: "OKX Wallet", id: "okx", provider: window.okxwallet },
+          { name: "MetaMask", id: "metamask", provider: window.ethereum },
+          { name: "币安Web3钱包", id: "binance", provider: window.BinanceChain },
+          { name: "Trust钱包", id: "trust", provider: window.trustwallet }
+        ];
+
+        for (const wallet of wallets) {
+          if (wallet.provider && wallet.provider.selectedAddress) {
+            currentWallet = wallet;
+            await connectWithProvider(wallet.provider, wallet.name);
+            return;
+          }
+        }
+      }
+
+      // 连接钱包
+      async function connectWallet() {
+        if (!checkEthers()) return;
+        showLoading();
+        const originalText = connectBtn.innerHTML;
+        connectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 检测钱包...';
+        connectBtn.disabled = true;
+
+        let walletProvider = null;
+        let walletName = "未知钱包";
+
+        if (window.okxwallet) {
+          walletProvider = window.okxwallet;
+          walletName = "OKX Wallet";
+        } else if (window.ethereum) {
+          walletProvider = window.ethereum;
+          walletName = "MetaMask";
+        } else if (window.BinanceChain) {
+          walletProvider = window.BinanceChain;
+          walletName = "币安Web3钱包";
+        } else if (window.trustwallet) {
+          walletProvider = window.trustwallet;
+          walletName = "Trust钱包";
+        }
+
+        if (walletProvider) {
+          try {
+            await connectWithProvider(walletProvider, walletName);
+            showNotification('钱包连接成功', 'success');
+          } catch (error) {
+            console.error('连接钱包失败:', error);
+            showNotification(`连接钱包失败: ${error.message}`, 'error');
+          }
+        } else {
+          showNotification('未检测到可用钱包，请安装OKX、MetaMask、币安或Trust钱包', 'error');
+        }
+
+        connectBtn.innerHTML = originalText;
+        connectBtn.disabled = false;
+        hideLoading();
+      }
+
+      // 使用特定提供者连接钱包
+      async function connectWithProvider(walletProvider, name) {
+        if (!checkEthers()) return;
+        try {
+          const accounts = await walletProvider.request({ method: 'eth_requestAccounts' });
+          provider = new ethers.providers.Web3Provider(walletProvider);
+          signer = provider.getSigner();
+          userAddress = accounts[0];
+
+          // 初始化合约
+          contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+          // 更新UI
+          walletAddress.textContent = `${userAddress.substring(0, 6)}...${userAddress.substring(38)}`;
+          walletName.textContent = name;
+          walletInfo.classList.remove('hidden');
+          connectBtn.classList.add('hidden');
+          disconnectBtn.classList.remove('hidden');
+
+          // 获取网络信息
+          const network = await provider.getNetwork();
+          networkInfo.textContent = network.name === "unknown" ? "BSC主网" : network.name;
+
+          // 获取余额
+          const balance = await provider.getBalance(userAddress);
+          balanceInfo.textContent = ethers.utils.formatEther(balance).substring(0, 6) + " BNB";
+
+          // 加载用户投注记录
+          loadUserBets();
+
+          // 初始化价格刷新
+          await updateBTCPrice();
+        } catch (error) {
+          console.error('连接钱包失败:', error);
+          throw error;
+        }
+      }
+
+      // 断开钱包连接
+      function disconnectWallet() {
+        userAddress = null;
+        signer = null;
+        provider = null;
+        contract = null;
+        currentWallet = null;
+
+        // 更新UI
+        walletInfo.classList.add('hidden');
+        connectBtn.classList.remove('hidden');
+        disconnectBtn.classList.add('hidden');
+        betsTableBody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 30px;">
+              未连接钱包或没有投注记录
+            </td>
+          </tr>
+        `;
+        showNotification('钱包已断开连接', 'success');
+      }
+
+      // 更新最低投注金额显示
+      async function updateMinAmountDisplay() {
+        if (!checkEthers() || !contract) {
+          minAmount.textContent = '请连接钱包以查看最低投注金额';
+          return;
+        }
+        try {
+          const token = document.querySelector('input[name="token"]:checked').value;
+          const mode = document.querySelector('input[name="mode"]:checked').value;
+          if (token === 'usdt') {
+            const min = mode === 'normal' ?
+              await contract.MIN_BET_USDT() :
+              await contract.MIN_BET_USDT_LOW_RISK();
+            minAmount.textContent = `最低投注: ${ethers.utils.formatUnits(min, 18)} USDT (${mode === 'normal' ? '正常模式' : '低风险模式'})`;
+          } else {
+            const min = await contract.MIN_BET_BNB();
+            minAmount.textContent = `最低投注: ${ethers.utils.formatUnits(min, 18)} BNB`;
+          }
+        } catch (error) {
+          console.error('获取最低投注金额失败:', error);
+          minAmount.textContent = '获取最低投注金额失败';
+          showNotification('获取最低投注金额失败', 'error');
+        }
+      }
+
+      // 加载用户投注记录
+      async function loadUserBets() {
+        if (!checkEthers() || !contract || !userAddress) return;
+        showLoading();
+        try {
+          const bets = await contract.getUserBets(userAddress);
+          betsTableBody.innerHTML = '';
+
+          if (bets.length === 0) {
+            betsTableBody.innerHTML = `
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 30px;">
+                  没有找到投注记录
+                </td>
+              </tr>
+            `;
+            hideLoading();
+            return;
+          }
+
+          bets.forEach((bet, index) => {
+            const direction = bet.betOnUp ? "看涨 📈" : "看跌 📉";
+            const token = bet.isUsdt ? "USDT" : "BNB";
+            const mode = bet.isLowRisk ? "低风险" : "正常";
+            const amountFormatted = ethers.utils.formatUnits(bet.amount, 18);
+
+            const startTime = new Date(bet.startTime * 1000);
+            const endTime = new Date((bet.startTime + bet.duration) * 1000);
+            const timeString = `${startTime.toLocaleDateString()} ${startTime.toLocaleTimeString()}`;
+
+            let status, statusClass, actionBtn;
+            if (bet.settled) {
+              const won = (bet.endPrice > bet.startPrice && bet.betOnUp) ||
+                (bet.endPrice < bet.startPrice && !bet.betOnUp);
+              status = won ? "已获胜" : "未获胜";
+              statusClass = won ? "status-won" : "status-lost";
+              actionBtn = "";
+            } else {
+              const now = Math.floor(Date.now() / 1000);
+              if (now < bet.startTime + bet.duration) {
+                status = "进行中";
+                statusClass = "status-pending";
+                actionBtn = "";
+              } else if (now > bet.startTime + bet.duration + 600 * 60) {
+                status = "已过期";
+                statusClass = "status-lost";
+                actionBtn = "";
+              } else {
+                status = "待结算";
+                statusClass = "status-pending";
+                actionBtn = `<button class="settle-btn" data-index="${index}" aria-label="结算投注 ${index + 1}">结算</button>`;
+              }
+            }
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${timeString}</td>
+              <td>${direction}</td>
+              <td>${amountFormatted} ${token}</td>
+              <td>${formatDuration(bet.duration)}</td>
+              <td>${mode}</td>
+              <td><span class="status-badge ${statusClass}">${status}</span></td>
+              <td>${actionBtn}</td>
+            `;
+            betsTableBody.appendChild(row);
+          });
+
+          // 移除旧的事件监听器
+          const oldButtons = document.querySelectorAll('.settle-btn');
+          oldButtons.forEach(btn => {
+            btn.replaceWith(btn.cloneNode(true));
+          });
+
+          // 添加新的事件监听器
+          document.querySelectorAll('.settle-btn').forEach(btn => {
+            btn.addEventListener('click', () => settleBet(btn.dataset.index));
+          });
+        } catch (error) {
+          console.error("加载投注记录失败:", error);
+          betsTableBody.innerHTML = `
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 30px; color: #ff5757;">
+              加载投注记录失败
+            </td>
+          </tr>
+        `;
+          showNotification('加载投注记录失败', 'error');
+        } finally {
+          hideLoading();
+        }
+      }
+
+      // 格式化时长
+      function formatDuration(seconds) {
+        if (seconds < 60) return `${seconds}秒`;
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}小时`;
+        if (seconds < 604800) return `${Math.floor(seconds / 86400)}天`;
+        return `${Math.floor(seconds / 604800)}周`;
+      }
+
+      // 下注处理
+      async function placeBetHandler(e) {
+        e.preventDefault();
+        if (!checkEthers() || !signer) {
+          showNotification('请先连接钱包!', 'error');
+          return;
+        }
+        showLoading();
+        try {
+          const direction = document.querySelector('input[name="direction"]:checked').value;
+          const token = document.querySelector('input[name="token"]:checked').value;
+          const mode = document.querySelector('input[name="mode"]:checked').value;
+          const duration = document.getElementById('durationSelect').value;
+          const amount = amountInput.value;
+
+          if (!amount || parseFloat(amount) <= 0) {
+            showNotification('请输入有效的投注金额', 'error');
+            hideLoading();
+            return;
+          }
+
+          const amountWei = ethers.utils.parseUnits(amount, 18);
+          const betOnUp = direction === "up";
+          const isUsdt = token === "usdt";
+          const isLowRisk = mode === "lowRisk";
+
+          let tx;
+          if (isUsdt) {
+            const usdtContract = new ethers.Contract(
+              usdtAddress,
+              ['function approve(address, uint256)', 'function allowance(address, address) view returns (uint256)'],
+              signer
+            );
+            const allowance = await usdtContract.allowance(userAddress, contractAddress);
+            if (allowance.lt(amountWei)) {
+              showNotification('正在请求USDT授权...', 'success');
+              const approveTx = await usdtContract.approve(contractAddress, amountWei);
+              await approveTx.wait();
+              showNotification('USDT授权成功', 'success');
+            }
+            tx = await contract.placeBet(betOnUp, true, isLowRisk, amountWei, duration);
+          } else {
+            tx = await contract.placeBet(betOnUp, false, isLowRisk, amountWei, duration, { value: amountWei });
+          }
+
+          await tx.wait();
+          showNotification('投注成功!', 'success');
+          loadUserBets();
+          amountInput.value = '';
+        } catch (error) {
+          console.error('投注失败:', error);
+          showNotification('投注失败: ' + error.message, 'error');
+        } finally {
+          hideLoading();
+        }
+      }
+
+      // 结算单笔投注
+      async function settleBet(betIndex) {
+        if (!checkEthers() || !signer || !userAddress) return;
+        showLoading();
+        try {
+          const tx = await contract.autoSettleBatch([userAddress], [betIndex]);
+          await tx.wait();
+          showNotification('结算成功!', 'success');
+          loadUserBets();
+        } catch (error) {
+          console.error("结算失败:", error);
+          showNotification('结算失败: ' + error.message, 'error');
+        } finally {
+          hideLoading();
+        }
+      }
+
+      // 结算所有到期投注
+      async function settleAllBets() {
+        if (!checkEthers() || !signer || !userAddress) return;
+        showLoading();
+        try {
+          const bets = await contract.getUserBets(userAddress);
+          const now = Math.floor(Date.now() / 1000);
+          const settleIndices = [];
+          bets.forEach((bet, index) => {
+            if (!bet.settled &&
+              now >= bet.startTime + bet.duration &&
+              now <= bet.startTime + bet.duration + 600 * 60) {
+              settleIndices.push(index);
+            }
+          });
+
+          if (settleIndices.length === 0) {
+            showNotification('没有需要结算的投注', 'error');
+            hideLoading();
+            return;
+          }
+
+          const users = Array(settleIndices.length).fill(userAddress);
+          const tx = await contract.autoSettleBatch(users, settleIndices);
+          await tx.wait();
+          showNotification(`成功结算 ${settleIndices.length} 笔投注!`, 'success');
+          loadUserBets();
+        } catch (error) {
+          console.error("批量结算失败:", error);
+          showNotification('批量结算失败: ' + error.message, 'error');
+        } finally {
+          hideLoading();
+        }
+      }
+
+      // 页面加载时初始化
+      window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
