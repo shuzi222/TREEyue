@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>树约 - 管理员面板</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-bg: #0a0a0a;
+      --secondary-bg: #121212;
+      --accent-green: #00ff8c;
+      --light-green: #b8ffd9;
+      --dark-green: #005a34;
+      --text-light: #f0f0f0;
+      --text-gray: #aaaaaa;
+      --border-radius: 12px;
+      --card-shadow: 0 4px 20px rgba(0, 255, 140, 0.1);
+      --success: #28a745;
+      --danger: #dc3545;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--primary-bg);
+      color: var(--text-light);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 20px;
+      background-image:
+        radial-gradient(circle at 10% 20%, rgba(0, 255, 140, 0.05) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(0, 255, 140, 0.05) 0%, transparent 20%);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      margin-bottom: 30px;
+      border-bottom: 1px solid rgba(0, 255, 140, 0.2);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo h1 {
+      font-size: 2rem;
+      background: linear-gradient(90deg, var(--accent-green), var(--light-green));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-weight: 700;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--dark-green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--accent-green);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .connect-btn,
+    .withdraw-btn,
+    .auto-settle-btn,
+    .bot-start-btn,
+    .bot-stop-btn {
+      background: var(--success);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 255, 140, 0.2);
+    }
+
+    .connect-btn:hover,
+    .withdraw-btn:hover,
+    .auto-settle-btn:hover,
+    .bot-start-btn:hover,
+    .bot-stop-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 255, 140, 0.3);
+    }
+
+    .bot-stop-btn {
+      background: var(--danger);
+    }
+
+    .bot-stop-btn:hover {
+      background: #b02a37;
+    }
+
+    .disconnect-btn {
+      background: var(--danger);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 255, 140, 0.2);
+    }
+
+    .wallet-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--secondary-bg);
+      padding: 8px 15px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      border: 1px solid var(--dark-green);
+    }
+
+    .wallet-address {
+      color: var(--accent-green);
+      font-weight: 500;
+    }
+
+    .panel {
+      background: var(--secondary-bg);
+      border-radius: var(--border-radius);
+      padding: 25px;
+      margin-bottom: 30px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 255, 140, 0.1);
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(0, 255, 140, 0.1);
+    }
+
+    .panel-title h2 {
+      font-size: 1.4rem;
+      color: var(--accent-green);
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    .bets-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .bets-table th,
+    .bets-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid rgba(0, 255, 140, 0.1);
+    }
+
+    .bets-table th {
+      background: rgba(0, 40, 20, 0.5);
+      color: var(--accent-green);
+      font-weight: 600;
+    }
+
+    .bets-table tr:hover {
+      background: rgba(0, 255, 140, 0.05);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .status-pending {
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+    }
+
+    .status-won {
+      background: rgba(0, 255, 140, 0.2);
+      color: var(--accent-green);
+    }
+
+    .status-lost {
+      background: rgba(255, 87, 87, 0.2);
+      color: #ff5757;
+    }
+
+    .settle-btn {
+      background: var(--dark-green);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .settle-btn:hover {
+      background: var(--accent-green);
+      color: #000;
+    }
+
+    .bot-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .bot-status span {
+      color: var(--accent-green);
+      font-weight: 500;
+    }
+
+    .log-area {
+      width: 100%;
+      height: 150px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--accent-green);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--text-light);
+      font-family: monospace;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 8px;
+      color: white;
+      font-size: 0.9rem;
+      z-index: 1001;
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: all 0.3s ease;
+    }
+
+    .notification.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .notification.success {
+      background: var(--dark-green);
+      border: 1px solid var(--accent-green);
+    }
+
+    .notification.error {
+      background: rgba(255, 87, 87, 0.2);
+      border: 1px solid #ff5757;
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      display: none;
+    }
+
+    .loading-spinner {
+      border: 4px solid var(--text-gray);
+      border-top: 4px solid var(--accent-green);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    button:focus {
+      outline: 2px solid var(--accent-green);
+      outline-offset: 2px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .disabled-btn {
+      background: var(--text-gray);
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">🌳</div>
+        <h1>树约 - 管理员面板</h1>
+      </div>
+      <div class="header-controls">
+        <button class="connect-btn" id="connectBtn"><i class="fas fa-plug"></i> 连接钱包</button>
+        <button class="disconnect-btn hidden" id="disconnectBtn"><i class="fas fa-power-off"></i> 断开连接</button>
+        <div class="wallet-info hidden" id="walletInfo">
+          <div>管理员：<span class="wallet-address" id="walletAddress"></span></div>
+          <div>网络：<span id="networkInfo">未知</span></div>
+          <div>余额：<span id="balanceInfo">0 BNB</span></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="panel bets-panel">
+      <div class="panel-title">
+        <h2>所有仓位</h2>
+      </div>
+      <div class="table-container">
+        <table class="bets-table">
+          <thead>
+            <tr>
+              <th>用户</th>
+              <th>方向</th>
+              <th>金额</th>
+              <th>时长</th>
+              <th>模式</th>
+              <th>开始价格</th>
+              <th>当前/结束价格</th>
+              <th>盈亏</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="betsTableBody">
+            <tr>
+              <td colspan="10" style="text-align: center; padding: 30px;">
+                未连接钱包或没有仓位记录
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel auto-settle-panel">
+      <div class="panel-title">
+        <h2>自动结算</h2>
+      </div>
+      <div class="bot-status">
+        <span id="botStatus">机器人状态: 已停止</span>
+      </div>
+      <div class="log-area" id="botLogArea"></div>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button class="bot-start-btn" id="botStartBtn">启动机器人</button>
+        <button class="bot-stop-btn disabled-btn" id="botStopBtn" disabled>停止机器人</button>
+        <button class="auto-settle-btn" id="autoSettleBtn">手动结算所有到期仓位</button>
+      </div>
+    </div>
+
+    <div class="panel withdraw-panel">
+      <div class="panel-title">
+        <h2>提取资金</h2>
+      </div>
+      <button class="withdraw-btn" id="withdrawBtn">提取剩余资金</button>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-spinner"></div>
+    </div>
+
+    <div id="notification"></div>
+  </div>
+
+  <script>
+    const contractAddress = "0xaDC1fB00539B875A7482AF18DF914bFa92Ec93f6";
+    const contractABI = [
+      {
+        "inputs": [
+          { "internalType": "address", "name": "_user", "type": "address" }
+        ],
+        "name": "getUserBets",
+        "outputs": [
+          {
+            "components": [
+              { "internalType": "uint256", "name": "amount", "type": "uint256" },
+              { "internalType": "bool", "name": "betOnUp", "type": "bool" },
+              { "internalType": "bool", "name": "isUsdt", "type": "bool" },
+              { "internalType": "bool", "name": "isLowRisk", "type": "bool" },
+              { "internalType": "uint256", "name": "duration", "type": "uint256" },
+              { "internalType": "uint256", "name": "startTime", "type": "uint256" },
+              { "internalType": "uint256", "name": "startPrice", "type": "uint256" },
+              { "internalType": "uint256", "name": "endPrice", "type": "uint256" },
+              { "internalType": "bool", "name": "settled", "type": "bool" }
+            ],
+            "internalType": "struct BTCPrediction.Bet[]",
+            "name": "",
+            "type": "tuple[]"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "getPrice",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "getUnsettledBets",
+        "outputs": [
+          { "internalType": "address[]", "name": "users", "type": "address[]" },
+          { "internalType": "uint256[]", "name": "indices", "type": "uint256[]" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "address[]", "name": "_users", "type": "address[]" },
+          { "internalType": "uint256[]", "name": "_betIndices", "type": "uint256[]" }
+        ],
+        "name": "autoSettleBatch",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [{ "internalType": "address", "name": "_token", "type": "address" }],
+        "name": "withdrawRemaining",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
+          { "indexed": false, "internalType": "uint256", "name": "betIndex", "type": "uint256" },
+          { "indexed": false, "internalType": "bool", "name": "betOnUp", "type": "bool" },
+          { "indexed": false, "internalType": "bool", "name": "isUsdt", "type": "bool" },
+          { "indexed": false, "internalType": "bool", "name": "isLowRisk", "type": "bool" },
+          { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" },
+          { "indexed": false, "internalType": "uint256", "name": "duration", "type": "uint256" },
+          { "indexed": false, "internalType": "uint256", "name": "startPrice", "type": "uint256" },
+          { "indexed": false, "internalType": "uint256", "name": "startTime", "type": "uint256" }
+        ],
+        "name": "BetPlaced",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          { "indexed": true, "internalType": "address", "name": "token", "type": "address" },
+          { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
+        ],
+        "name": "FundsWithdrawn",
+        "type": "event"
+      }
+    ];
+
+    let provider, signer, contract, userAddress;
+    let botRunning = false;
+    let botInterval = null;
+
+    // DOM 元素
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const walletInfo = document.getElementById('walletInfo');
+    const walletAddress = document.getElementById('walletAddress');
+    const networkInfo = document.getElementById('networkInfo');
+    const balanceInfo = document.getElementById('balanceInfo');
+    const betsTableBody = document.getElementById('betsTableBody');
+    const withdrawBtn = document.getElementById('withdrawBtn');
+    const autoSettleBtn = document.getElementById('autoSettleBtn');
+    const botStartBtn = document.getElementById('botStartBtn');
+    const botStopBtn = document.getElementById('botStopBtn');
+    const botStatus = document.getElementById('botStatus');
+    const botLogArea = document.getElementById('botLogArea');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    // 显示通知
+    function showNotification(message, type = 'error') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type} show`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+      }, 5000);
+    }
+
+    // 显示/隐藏加载动画
+    function showLoading() {
+      loadingOverlay.style.display = 'flex';
+    }
+
+    function hideLoading() {
+      loadingOverlay.style.display = 'none';
+    }
+
+    // 格式化时长
+    function formatDuration(seconds) {
+      if (seconds < 60) return `${seconds}秒`;
+      if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)}小时`;
+      if (seconds < 604800) return `${Math.floor(seconds / 86400)}天`;
+      return `${Math.floor(seconds / 604800)}周`;
+    }
+
+    // 计算盈亏
+    async function calculateProfitLoss(bet) {
+      try {
+        const currentPrice = await contract.getPrice();
+        const currentPriceUSD = parseFloat(ethers.utils.formatUnits(currentPrice, 18));
+        const startPriceUSD = parseFloat(ethers.utils.formatUnits(bet.startPrice, 18));
+        const amountUSD = parseFloat(ethers.utils.formatUnits(bet.amount, bet.isUsdt ? 18 : 18));
+
+        if (bet.settled) {
+          const endPriceUSD = parseFloat(ethers.utils.formatUnits(bet.endPrice, 18));
+          const isCorrect = (bet.betOnUp && endPriceUSD > startPriceUSD) || (!bet.betOnUp && endPriceUSD < startPriceUSD);
+          if (bet.isLowRisk) {
+            return isCorrect ? amountUSD * (1.09 - 1) : amountUSD * (0.9 - 1);
+          } else {
+            const fluctuation = Math.abs((endPriceUSD - startPriceUSD) / startPriceUSD * 10000);
+            const level = fluctuation >= 1700 ? 9 : fluctuation >= 1500 ? 8 : fluctuation >= 1300 ? 7 :
+              fluctuation >= 1100 ? 6 : fluctuation >= 900 ? 5 : fluctuation >= 700 ? 4 :
+                fluctuation >= 500 ? 3 : fluctuation >= 300 ? 2 : fluctuation >= 100 ? 1 : 0;
+            const odds = [0.9, 1.16, 1.24, 1.32, 1.4, 1.48, 1.56, 1.64, 1.72, 1.8][level];
+            const lossOdds = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0][level];
+            return isCorrect ? amountUSD * (odds - 1) : amountUSD * (lossOdds - 1);
+          }
+        } else {
+          const isCorrect = (bet.betOnUp && currentPriceUSD > startPriceUSD) || (!bet.betOnUp && currentPriceUSD < startPriceUSD);
+          if (bet.isLowRisk) {
+            return isCorrect ? amountUSD * (1.09 - 1) : amountUSD * (0.9 - 1);
+          } else {
+            const fluctuation = Math.abs((currentPriceUSD - startPriceUSD) / startPriceUSD * 10000);
+            const level = fluctuation >= 1700 ? 9 : fluctuation >= 1500 ? 8 : fluctuation >= 1300 ? 7 :
+              fluctuation >= 1100 ? 6 : fluctuation >= 900 ? 5 : fluctuation >= 700 ? 4 :
+                fluctuation >= 500 ? 3 : fluctuation >= 300 ? 2 : fluctuation >= 100 ? 1 : 0;
+            const odds = [0.9, 1.16, 1.24, 1.32, 1.4, 1.48, 1.56, 1.64, 1.72, 1.8][level];
+            const lossOdds = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0][level];
+            return isCorrect ? amountUSD * (odds - 1) : amountUSD * (lossOdds - 1);
+          }
+        }
+      } catch (error) {
+        console.error("计算盈亏失败:", error);
+        return 0;
+      }
+    }
+
+    // 检查管理员权限
+    async function checkOwner() {
+      try {
+        const owner = await contract.owner();
+        if (owner.toLowerCase() !== userAddress.toLowerCase()) {
+          showNotification("仅限合约管理员操作", "error");
+          return false;
+        }
+        return true;
+      } catch (error) {
+        showNotification(`检查管理员权限失败: ${error.message}`, 'error');
+        return false;
+      }
+    }
+
+    // 获取用户地址和投注索引
+    async function fetchUserAddressesAndBets() {
+      try {
+        const filter = contract.filters.BetPlaced();
+        const events = await contract.queryFilter(filter, 0, "latest");
+        return events.map(event => ({
+          user: event.args.user,
+          betIndex: event.args.betIndex.toNumber(),
+          startTime: event.args.startTime.toNumber(),
+          duration: event.args.duration.toNumber()
+        }));
+      } catch (error) {
+        console.error("获取BetPlaced事件失败:", error);
+        return [];
+      }
+    }
+
+    // 加载所有仓位（包括未到期、待结算、已结算）
+    async function loadAllBets() {
+      if (!contract || !userAddress || !(await checkOwner())) return;
+      showLoading();
+      try {
+        const betEvents = await fetchUserAddressesAndBets();
+        let bets = [];
+        for (const event of betEvents) {
+          const userBets = await contract.getUserBets(event.user);
+          const bet = userBets[event.betIndex];
+          if (bet) {
+            bets.push({
+              user: event.user,
+              betIndex: event.betIndex,
+              amount: bet.amount,
+              betOnUp: bet.betOnUp,
+              isUsdt: bet.isUsdt,
+              isLowRisk: bet.isLowRisk,
+              duration: bet.duration,
+              startTime: bet.startTime,
+              startPrice: bet.startPrice,
+              endPrice: bet.endPrice,
+              settled: bet.settled
+            });
+          }
+        }
+
+        betsTableBody.innerHTML = '';
+        if (bets.length === 0) {
+          betsTableBody.innerHTML = `
+            <tr>
+              <td colspan="10" style="text-align: center; padding: 30px;">
+                没有找到仓位记录
+              </td>
+            </tr>
+          `;
+          hideLoading();
+          return;
+        }
+
+        for (const bet of bets) {
+          const direction = bet.betOnUp ? "看涨 📈" : "看跌 📉";
+          const token = bet.isUsdt ? "USDT" : "BNB";
+          const mode = bet.isLowRisk ? "低风险" : "正常";
+          const amountFormatted = ethers.utils.formatUnits(bet.amount, 18);
+          const startPriceUSD = ethers.utils.formatUnits(bet.startPrice, 18);
+          const endPriceUSD = bet.settled ? ethers.utils.formatUnits(bet.endPrice, 18) : "-";
+          const profitLoss = await calculateProfitLoss(bet);
+          const profitLossFormatted = profitLoss >= 0 ? `+${profitLoss.toFixed(2)}` : profitLoss.toFixed(2);
+
+          const startTime = new Date(bet.startTime * 1000);
+          const timeString = `${startTime.toLocaleDateString()} ${startTime.toLocaleTimeString()}`;
+
+          let status, statusClass, actionBtn;
+          const now = Math.floor(Date.now() / 1000);
+          const SETTLE_WINDOW = 600 * 60; // 10小时
+          if (bet.settled) {
+            const won = (bet.endPrice > bet.startPrice && bet.betOnUp) || (bet.endPrice < bet.startPrice && !bet.betOnUp);
+            status = won ? "已获胜" : "未获胜";
+            statusClass = won ? "status-won" : "status-lost";
+            actionBtn = "";
+          } else if (now < bet.startTime.toNumber() + bet.duration.toNumber()) {
+            status = "未到期";
+            statusClass = "status-pending";
+            actionBtn = "";
+          } else if (now > bet.startTime.toNumber() + bet.duration.toNumber() + SETTLE_WINDOW) {
+            status = "已过期";
+            statusClass = "status-lost";
+            actionBtn = "";
+          } else {
+            status = "待结算";
+            statusClass = "status-pending";
+            actionBtn = `<button class="settle-btn" data-user="${bet.user}" data-index="${bet.betIndex}" aria-label="结算仓位">结算</button>`;
+          }
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${bet.user.slice(0, 6)}...${bet.user.slice(-4)}</td>
+            <td>${direction}</td>
+            <td>${amountFormatted} ${token}</td>
+            <td>${formatDuration(bet.duration)}</td>
+            <td>${mode}</td>
+            <td>$${parseFloat(startPriceUSD).toFixed(2)}</td>
+            <td>${endPriceUSD === "-" ? "-" : "$" + parseFloat(endPriceUSD).toFixed(2)}</td>
+            <td style="color: ${profitLoss >= 0 ? 'var(--accent-green)' : '#ff5757'}">${profitLossFormatted} ${token}</td>
+            <td><span class="status-badge ${statusClass}">${status}</span></td>
+            <td>${actionBtn}</td>
+          `;
+          betsTableBody.appendChild(row);
+        }
+
+        // 移除旧的事件监听器
+        document.querySelectorAll('.settle-btn').forEach(btn => {
+          btn.replaceWith(btn.cloneNode(true));
+        });
+
+        // 添加新的事件监听器
+        document.querySelectorAll('.settle-btn').forEach(btn => {
+          btn.addEventListener('click', () => settleBet(btn.dataset.user, btn.dataset.index));
+        });
+      } catch (error) {
+        console.error("加载仓位失败:", error);
+        betsTableBody.innerHTML = `
+          <tr>
+            <td colspan="10" style="text-align: center; padding: 30px; color: #ff5757;">
+              加载仓位记录失败
+            </td>
+          </tr>
+        `;
+        showNotification(`加载仓位记录失败: ${error.message}`, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // 获取未结算投注
+    async function getUnsettledBets() {
+      try {
+        const [users, indices] = await contract.getUnsettledBets();
+        log(`获取到 ${users.length} 条待结算投注`);
+        return { users, indices };
+      } catch (error) {
+        log(`获取待结算投注失败: ${error.message}`);
+        return { users: [], indices: [] };
+      }
+    }
+
+    // 批量结算投注
+    async function settleBets(users, indices) {
+      if (!contract || !userAddress || !(await checkOwner())) return;
+      if (users.length === 0 || indices.length === 0) {
+        log("没有可结算的投注");
+        return;
+      }
+
+      showLoading();
+      try {
+        const maxBatchSize = 100;
+        for (let i = 0; i < users.length; i += maxBatchSize) {
+          const batchUsers = users.slice(i, i + maxBatchSize);
+          const batchIndices = indices.slice(i, i + maxBatchSize);
+          log(`正在结算 ${batchUsers.length} 条投注...`);
+
+          const tx = await contract.autoSettleBatch(batchUsers, batchIndices, { gasLimit: 5000000 });
+          const receipt = await tx.wait();
+          log(`批量结算成功，交易哈希: ${receipt.transactionHash}, Gas 使用: ${receipt.gasUsed}`);
+        }
+        await loadAllBets();
+      } catch (error) {
+        log(`批量结算失败: ${error.message}`);
+        showNotification(`批量结算失败: ${error.message}`, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // 日志记录
+    function log(message) {
+      const timestamp = new Date().toISOString().replace("T", " ").substring(0, 19);
+      const logMessage = `[${timestamp}] ${message}\n`;
+      console.log(logMessage);
+      botLogArea.textContent += logMessage;
+      botLogArea.scrollTop = botLogArea.scrollHeight;
+    }
+
+    // 自动结算机器人循环
+    async function botLoop() {
+      if (!botRunning) return;
+      try {
+        const price = await contract.getPrice();
+        const priceInUSD = ethers.utils.formatUnits(price, 18);
+        log(`当前 BTC 价格: $${parseFloat(priceInUSD).toFixed(2)}`);
+
+        const { users, indices } = await getUnsettledBets();
+        await settleBets(users, indices);
+      } catch (error) {
+        log(`机器人循环错误: ${error.message}`);
+      }
+    }
+
+    // 启动机器人
+    async function startBot() {
+      if (botRunning || !contract || !userAddress || !(await checkOwner())) return;
+      botRunning = true;
+      botStatus.textContent = "机器人状态: 运行中";
+      botStartBtn.classList.add('disabled-btn');
+      botStartBtn.disabled = true;
+      botStopBtn.classList.remove('disabled-btn');
+      botStopBtn.disabled = false;
+      log("机器人启动...");
+      botInterval = setInterval(botLoop, 1000);
+    }
+
+    // 停止机器人
+    function stopBot() {
+      if (!botRunning) return;
+      botRunning = false;
+      botStatus.textContent = "机器人状态: 已停止";
+      botStartBtn.classList.remove('disabled-btn');
+      botStartBtn.disabled = false;
+      botStopBtn.classList.add('disabled-btn');
+      botStopBtn.disabled = true;
+      clearInterval(botInterval);
+      log("机器人已停止");
+    }
+
+    // 手动结算所有到期仓位
+    async function autoSettleAll() {
+      if (!contract || !userAddress || !(await checkOwner())) return;
+      showLoading();
+      try {
+        const { users, indices } = await getUnsettledBets();
+        if (users.length === 0) {
+          showNotification("没有可结算的仓位", "error");
+          hideLoading();
+          return;
+        }
+        await settleBets(users, indices);
+        showNotification(`成功结算 ${users.length} 个仓位`, 'success');
+      } catch (error) {
+        console.error("手动结算失败:", error);
+        showNotification(`手动结算失败: ${error.message}`, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // 连接钱包
+    async function connectWallet() {
+      if (typeof ethers === 'undefined') {
+        showNotification('Ethers.js未加载，请检查网络或刷新页面', 'error');
+        return;
+      }
+      showLoading();
+      try {
+        if (!window.ethereum) {
+          showNotification('请安装MetaMask或其他钱包', 'error');
+          return;
+        }
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        userAddress = accounts[0];
+        contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        const network = await provider.getNetwork();
+        if (network.chainId !== 56) {
+          showNotification("请切换到BSC主网", "error");
+          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
+        }
+
+        walletAddress.textContent = `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+        networkInfo.textContent = network.name === "unknown" ? "BSC主网" : network.name;
+        const balance = await provider.getBalance(userAddress);
+        balanceInfo.textContent = `${ethers.utils.formatEther(balance).substring(0, 6)} BNB`;
+        walletInfo.classList.remove('hidden');
+        connectBtn.classList.add('hidden');
+        disconnectBtn.classList.remove('hidden');
+
+        await loadAllBets();
+        showNotification('钱包连接成功', 'success');
+      } catch (error) {
+        console.error("连接钱包失败:", error);
+        showNotification(`连接钱包失败: ${error.message}`, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // 断开钱包
+    function disconnectWallet() {
+      userAddress = null;
+      signer = null;
+      provider = null;
+      contract = null;
+      botRunning = false;
+      clearInterval(botInterval);
+      botStatus.textContent = "机器人状态: 已停止";
+      botStartBtn.classList.remove('disabled-btn');
+      botStartBtn.disabled = false;
+      botStopBtn.classList.add('disabled-btn');
+      botStopBtn.disabled = true;
+      walletInfo.classList.add('hidden');
+      connectBtn.classList.remove('hidden');
+      disconnectBtn.classList.add('hidden');
+      betsTableBody.innerHTML = `
+        <tr>
+          <td colspan="10" style="text-align: center; padding: 30px;">
+            未连接钱包或没有仓位记录
+          </td>
+        </tr>
+      `;
+      botLogArea.textContent = '';
+      showNotification('钱包已断开连接', 'success');
+    }
+
+    // 手动结算仓位
+    async function settleBet(user, betIndex) {
+      if (!contract || !userAddress || !(await checkOwner())) return;
+      showLoading();
+      try {
+        const tx = await contract.autoSettleBatch([user], [betIndex], { gasLimit: 1000000 });
+        await tx.wait();
+        showNotification('结算成功', 'success');
+        await loadAllBets();
+      } catch (error) {
+        console.error("结算失败:", error);
+        showNotification(`结算失败: ${error.message}`, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // 提取剩余资金
+    async function withdrawFunds() {
+      if (!contract || !userAddress || !(await checkOwner())) return;
+      showLoading();
+      try {
+        const tx = await contract.withdrawRemaining(ethers.constants.AddressZero, { gasLimit: 1000000 });
+        await tx.wait();
+        showNotification('资金提取成功', 'success');
+      } catch (error) {
+        console.error("提取资金失败:", error);
+        showNotification(`提取资金失败: ${error.message}`, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // 初始化
+    function init() {
+      connectBtn.addEventListener('click', connectWallet);
+      disconnectBtn.addEventListener('click', disconnectWallet);
+      withdrawBtn.addEventListener('click', withdrawFunds);
+      autoSettleBtn.addEventListener('click', autoSettleAll);
+      botStartBtn.addEventListener('click', startBot);
+      botStopBtn.addEventListener('click', stopBot);
+
+      if (window.ethereum) {
+        window.ethereum.on('accountsChanged', async (accounts) => {
+          if (accounts.length === 0) {
+            disconnectWallet();
+          } else {
+            await connectWallet();
+          }
+        });
+        window.ethereum.on('chainChanged', () => {
+          showNotification('网络已切换，请重新连接钱包', 'error');
+          disconnectWallet();
+        });
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+
+</html>
